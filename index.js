@@ -158,6 +158,58 @@ app.post("/items", requireAuth, async (req, res) => {
   res.status(201).json({ item: result.rows[0] });
 });
 
+app.patch("/items/:id", requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id" });
+
+  const name = req.body.name !== undefined ? String(req.body.name).trim() : undefined;
+  const quantity = req.body.quantity !== undefined ? Number(req.body.quantity) : undefined;
+
+  if (name !== undefined && !name) return res.status(400).json({ error: "Name cannot be empty" });
+  if (quantity !== undefined && (!Number.isInteger(quantity) || quantity < 0)) {
+    return res.status(400).json({ error: "Quantity must be a non-negative integer" });
+  }
+
+  // Only update fields that were provided
+  const result = await pool.query(
+    `
+    UPDATE items
+    SET
+      name = COALESCE($1, name),
+      quantity = COALESCE($2, quantity),
+      updated_at = NOW()
+    WHERE id = $3 AND user_id = $4
+    RETURNING id, user_id, name, quantity, created_at, updated_at
+    `,
+    [
+      name === undefined ? null : name,
+      quantity === undefined ? null : quantity,
+      id,
+      req.session.userId,
+    ]
+  );
+
+  const updated = result.rows[0];
+  if (!updated) return res.status(404).json({ error: "Item not found" });
+
+  res.json({ item: updated });
+});
+
+app.delete("/items/:id", requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id" });
+
+  const result = await pool.query(
+    `DELETE FROM items WHERE id = $1 AND user_id = $2 RETURNING id`,
+    [id, req.session.userId]
+  );
+
+  const deleted = result.rows[0];
+  if (!deleted) return res.status(404).json({ error: "Item not found" });
+
+  res.json({ ok: true });
+});
+
 app.listen(PORT, () => {
   console.log(`API running on http://localhost:${PORT}`);
 });
