@@ -151,7 +151,7 @@ app.post("/items", requireAuth, async (req, res) => {
   const result = await pool.query(
     `INSERT INTO items (user_id, name, quantity)
      VALUES ($1, $2, $3)
-     RETURNING id, user_id, name, quantity, created_at, updated_at`,
+     RETURNING id, user_id, name, category, status, quantity, notes, created_at, updated_at`,
     [req.session.userId, name, quantity]
   );
 
@@ -179,8 +179,7 @@ app.patch("/items/:id", requireAuth, async (req, res) => {
       quantity = COALESCE($2, quantity),
       updated_at = NOW()
     WHERE id = $3 AND user_id = $4
-    RETURNING id, user_id, name, quantity, created_at, updated_at
-    `,
+    RETURNING id, user_id, name, category, status, quantity, notes, created_at, updated_at`,
     [
       name === undefined ? null : name,
       quantity === undefined ? null : quantity,
