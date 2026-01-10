@@ -65,3 +65,44 @@ curl -b cookies.txt -X POST http://localhost:3000/items \
 
 List items:
 `curl -b cookies.txt http://localhost:3000/items`
+
+## Database Setup
+This API uses PostgreSQL for data storage and session-based authentication.
+
+### Prerequisites
+- PostgreSQL installed and running (Postgres.app or Homebrew)
+- Node.js
+
+1. Create the database
+`createdb inventory_app`
+
+2. Apply the schema
+From the `inventory-api` directory:
+`psql -d inventory_app < db/schema.sql`
+
+This will create:
+- `users` table
+- `items` table
+- `session` table (used by `connect-pg-simple`)
+- indexes and constraints
+
+3. Environment variables
+Copy the example file `.env.example` and update values as needed:
+
+
+4. Start the API
+```bash
+npm install
+npm run dev
+```
+
+Verify it's running:
+`curl http://localhost:3000/health`
+
+Expected response:
+`{ "ok": true }`
+
+## Notes
+- The database schema is versioned in `db/schema.sql`
+- The API uses server-side sessions stored in PostgreSQL
+- Item records are scoped per user via a foreign key (`items.user_id → users.id`)
