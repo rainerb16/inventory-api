@@ -1,7 +1,7 @@
 # Inventory Dashboard API
 
 A Node/Express REST API backed by PostgreSQL, using session-based authentication (HttpOnly cookies).  
-Built as the backend for an admin-style inventory dashboard (React frontend coming next).
+Built as the backend for an admin-style inventory dashboard. Also set up GitHub Actions CI to automatically install dependencies and run frontend build + backend checks on every push/ PR.
 
 ## Tech Stack
 - Node.js + Express
