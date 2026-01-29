@@ -1,4 +1,4 @@
-# ⚙️ Inventory Management API
+# Inventory Management API
 
 A robust **Node/Express** REST API designed for admin-style inventory dashboards. This backend handles secure data persistence via **PostgreSQL** and provides a "merchant-first" architecture where all data is scoped to an authenticated user.
 
