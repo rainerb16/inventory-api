@@ -1,108 +1,76 @@
-# Inventory Dashboard API
+# ⚙️ Inventory Management API
 
-A Node/Express REST API backed by PostgreSQL, using session-based authentication (HttpOnly cookies).  
-Built as the backend for an admin-style inventory dashboard. Also set up GitHub Actions CI to automatically install dependencies and run frontend build + backend checks on every push/ PR.
+A robust **Node/Express** REST API designed for admin-style inventory dashboards. This backend handles secure data persistence via **PostgreSQL** and provides a "merchant-first" architecture where all data is scoped to an authenticated user.
 
-## Tech Stack
-- Node.js + Express
-- PostgreSQL
-- pg (connection pool + parameterized queries)
-- express-session + connect-pg-simple (sessions stored in Postgres)
-- bcrypt (password hashing)
-- CORS configured for a Vite dev client
+## Technical Highlights
+- **Engine:** Node.js + Express
+- **Persistence:** PostgreSQL with `pg` connection pooling and parameterized queries.
+- **Security:** Session-based auth via `HttpOnly` cookies, stored server-side in Postgres (`connect-pg-simple`).
+- **DevOps:** GitHub Actions CI pipeline for automated dependency installation and build verification.
 
-## Features
-- Auth
-  - Sign up: `POST /auth/signup`
-  - Login: `POST /auth/login`
-  - Current user: `GET /me`
-  - Logout: `POST /auth/logout`
-- Items (protected)
-  - List items for the logged-in user: `GET /items`
-  - Create an item for the logged-in user: `POST /items`
-- User-owned data model
-  - `items.user_id` references `users.id` (foreign key)
-  - Prevents orphan records and enforces ownership
+---
 
-## How Auth Works (Sessions)
-- On signup/login, the server creates a session and stores `userId` server-side.
-- The client receives an HttpOnly cookie (session id).
-- The browser includes the cookie automatically on future requests.
-- Protected routes use middleware to check `req.session.userId`.
+## API Documentation
+All protected routes require a valid session cookie established via the Auth endpoints.
 
-## Environment Variables
-Create a `.env` file:
+### Authentication
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/auth/signup` | Register a new account (hashes password via `bcrypt`). |
+| `POST` | `/auth/login` | Authenticate user and initiate session. |
+| `GET` | `/me` | Returns details for the currently logged-in user. |
+| `POST` | `/auth/logout` | Destroys session and clears client cookie. |
 
-```bash
-PORT=3000
-DATABASE_URL=postgres://<your-mac-username>@localhost:5432/inventory_app
-SESSION_SECRET=your-long-random-secret
-```
-## Local Setup
-1. Install dependencies:
-`npm install`
+### Items (Protected)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/items` | List all inventory items owned by the current user. |
+| `POST` | `/items` | Create a new item record. |
 
-2. Start the server:
-`npm run dev`
+---
 
-## Quick Test
-Signup (saves cookie):
+## Manual Testing (CLI)
+You can verify the authentication flow and data scoping using `curl`:
+
+**1. Signup:**
 ```bash
 curl -i -c cookies.txt -X POST http://localhost:3000/auth/signup \
   -H "Content-Type: application/json" \
-  -d '{"email":"you@test.com","password":"password123"}'
+  -d '{"email":"user@test.com","password":"password123"}'
 ```
 
-Check session:
-`curl -b cookies.txt http://localhost:3000/me`
-
-Create item:
+**2. Create an item:**
 ```bash
 curl -b cookies.txt -X POST http://localhost:3000/items \
   -H "Content-Type: application/json" \
-  -d '{"name":"My first item","quantity":1}'
+  -d '{"name":"Inventory Item A","quantity":10}'
 ```
 
-List items:
-`curl -b cookies.txt http://localhost:3000/items`
+## Localizatoin Setup
 
-## Database Setup
-This API uses PostgreSQL for data storage and session-based authentication.
+**1. Database Configuration**
+Ensure PostgreSQL is running, then create the database and apply the schema:
+```bash
+createdb inventory_app
+psql -d inventory_app < db/schema.sql
+```
 
-### Prerequisites
-- PostgreSQL installed and running (Postgres.app or Homebrew)
-- Node.js
+**2. Environment Variables**
+Create a `.env` file in the root directory:
+```bash
+PORT=3000
+DATABASE_URL=postgres://localhost:5432/inventory_app
+SESSION_SECRET=your_secret_string
+```
 
-1. Create the database
-`createdb inventory_app`
-
-2. Apply the schema
-From the `inventory-api` directory:
-`psql -d inventory_app < db/schema.sql`
-
-This will create:
-- `users` table
-- `items` table
-- `session` table (used by `connect-pg-simple`)
-- indexes and constraints
-
-3. Environment variables
-Copy the example file `.env.example` and update values as needed:
-
-
-4. Start the API
+**3. Start Development Server**
 ```bash
 npm install
 npm run dev
 ```
 
-Verify it's running:
-`curl http://localhost:3000/health`
+## Security and Design Implementation
+- Data Isolation: Enforced via a `user_id` foreign key on the `items` table.
+- SQL Injection Protection: All database interactions utilize parameterized queries.
+- Stateful Security: Server-side sessions prevent unauthorized data access even if client-side state is compromised.
 
-Expected response:
-`{ "ok": true }`
-
-## Notes
-- The database schema is versioned in `db/schema.sql`
-- The API uses server-side sessions stored in PostgreSQL
-- Item records are scoped per user via a foreign key (`items.user_id → users.id`)
